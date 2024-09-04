@@ -1,0 +1,3 @@
+# PlayStation 4 app to merge pkgs on the console itself
+
+For those of us who only have 32 gb flash drive and too slow poor router for remote game transferring...

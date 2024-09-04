@@ -1,1 +1,7 @@
 .DS_Store
+eboot.bin
+*.pkg
+pkg.gp4
+sce_sys/param.sfo
+merger-app/x64/Debug/*
+!merger-app/x64/Debug/.gitkeep

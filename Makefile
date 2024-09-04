@@ -18,8 +18,7 @@ LIBMODULES  := $(wildcard sce_module/*)
 
 # Root vars
 TOOLCHAIN   := $(OO_PS4_TOOLCHAIN)
-PROJDIR     := $(shell basename $(CURDIR))
-COMMONDIR   := $(TOOLCHAIN)/samples/_common
+PROJDIR     := merger-app
 INTDIR      := $(PROJDIR)/x64/Debug
 
 # Define objects to build
@@ -38,6 +37,10 @@ _unused     := $(shell mkdir -p $(INTDIR))
 # Check for linux vs macOS and account for clang/ld path
 UNAME_S     := $(shell uname -s)
 
+# CC      := /usr/local/opt/llvm/bin/clang
+# CCX     := /usr/local/opt/llvm/bin/clang++
+# LD      := /usr/local/opt/llvm/bin/ld.lld
+
 ifeq ($(UNAME_S),Linux)
 		CC      := clang
 		CCX     := clang++
@@ -45,9 +48,9 @@ ifeq ($(UNAME_S),Linux)
 		CDIR    := linux
 endif
 ifeq ($(UNAME_S),Darwin)
-		CC      := /usr/local/opt/llvm/bin/clang
-		CCX     := /usr/local/opt/llvm/bin/clang++
-		LD      := /usr/local/opt/llvm/bin/ld.lld
+		CC      := /opt/homebrew/opt/llvm/bin/clang
+		CCX     := /opt/homebrew/opt/llvm/bin/clang++
+		LD      := /opt/homebrew/opt/llvm/bin/ld.lld
 		CDIR    := macos
 endif
 

@@ -2,7 +2,7 @@
 #include <iostream>
 #include <orbis/libkernel.h>
 
-#include "../log.h"
+#include "./common/log.h"
 
 // Logging
 std::stringstream debugLogStream;

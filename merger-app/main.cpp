@@ -1,20 +1,25 @@
 #include <sstream>
 #include <iostream>
-#include <orbis/libkernel.h>
+#include <vector>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
-#include <string.h>
 #include <stdbool.h>
 
+#include <orbis/libkernel.h>
 #include <orbis/CommonDialog.h>
 #include <orbis/MsgDialog.h>
 #include <orbis/Sysmodule.h>
+#include <orbis/UsbStorage.h>
 
 #define MDIALOG_OK       0
 #define MDIALOG_YESNO    1
 
-#include "./common/log.h"
-#include "./common/graphics.h"
+#include "common/log.h"
+#include "common/graphics.cpp"
+#include "controller.h"
 
 std::stringstream debugLogStream;
 
@@ -22,12 +27,14 @@ std::stringstream debugLogStream;
 #define FRAME_HEIGHT    1080
 #define FRAME_DEPTH        4
 
-#define FONT_SIZE   	   42
+#define FONT_SIZE   	   32
 
 Color bgColor;
 Color fgColor;
 FT_Face fontTxt;
 int frameID = 0;
+
+std::stringstream userTextStream;
 
 // =================================================================================================
 
@@ -86,8 +93,9 @@ int show_dialog(int dialog_type, const char * format, ...)
     return (result.buttonId == ORBIS_MSG_DIALOG_BUTTON_ID_YES);
 }
 
-void list_files_on_usb(const char* usb_path)
+std::vector<std::string> list_files_on_usb(const char* usb_path)
 {
+    std::vector<std::string> file_list;
     DIR* dir;
     struct dirent* entry;
     struct stat file_stat;
@@ -95,31 +103,25 @@ void list_files_on_usb(const char* usb_path)
     dir = opendir(usb_path);
     if (dir == NULL)
     {
-        printf("Failed to open directory: %s\n", usb_path);
-        return;
+        userTextStream << "Failed to open " << usb_path << " directory\n";
+        return file_list;
     }
 
-    printf("Listing files in: %s\n", usb_path);
+    userTextStream << "Opened " << usb_path << " directory\n";
 
     while ((entry = readdir(dir)) != NULL)
     {
         char full_path[1024];
         snprintf(full_path, sizeof(full_path), "%s/%s", usb_path, entry->d_name);
 
-        if (stat(full_path, &file_stat) == 0)
+        if (stat(full_path, &file_stat) == 0 && S_ISREG(file_stat.st_mode))
         {
-            if (S_ISDIR(file_stat.st_mode))
-            {
-                printf("[DIR]  %s\n", entry->d_name);
-            }
-            else if (S_ISREG(file_stat.st_mode))
-            {
-                printf("[FILE] %s (%ld bytes)\n", entry->d_name, file_stat.st_size);
-            }
+            file_list.push_back(entry->d_name);
         }
     }
 
     closedir(dir);
+    return file_list;
 }
 
 int main(void)
@@ -143,8 +145,8 @@ int main(void)
     
     if(!scene->Init(0xC000000, 2))
     {
-    	DEBUGLOG << "Failed to initialize 2D scene";
-    	for(;;);
+        DEBUGLOG << "Failed to initialize 2D scene";
+        for(;;);
     }
 
     bgColor = { 61, 116, 231 };
@@ -156,12 +158,39 @@ int main(void)
 
     if(!scene->InitFont(&fontTxt, font, FONT_SIZE))
     {
-    	DEBUGLOG << "Failed to initialize font '" << font << "'";
-    	for(;;);
+        DEBUGLOG << "Failed to initialize font '" << font << "'";
+        for(;;);
     }
 
-    list_files_on_usb("/mnt/usb0")
+    userTextStream << "Welcome! Searching in /data/pkg_merger...\n";
+    std::vector<std::string> files = list_files_on_usb("/data/pkg_merger");
+    userTextStream << "Found " << files.size() << " files.\n";
+    for (const auto &file : files)
+    {
+        if (file.size() > 8 && file.substr(file.size() - 8) == ".pkgpart")
+        {
+            userTextStream << file << "\n";
+        }
+    }
 
+    auto controller = new Controller();
+    bool listen = false;
+    if (files.size() > 1)
+    {
+        userTextStream << "Press any button on controller to merge parts\n";
+        if (!controller->Init(-1))
+        {
+            userTextStream << "Couldn't initialize controller\n";
+            for (;;);
+        }
+
+        listen = true;
+    }
+    else
+    {
+        userTextStream << "You must split your pkgs on PC and move them from /mnt/usb0 to /data/pkg_merger using FTP\n";
+    }
+    
     for (;;)
     {
         scene->DrawText((char *)userTextStream.str().c_str(), fontTxt, 150, 150, bgColor, fgColor);
@@ -173,6 +202,36 @@ int main(void)
         // Swap to the next buffer
         scene->FrameBufferSwap();
         frameID++;
+
+        if (listen)
+        {
+            if (controller->TrianglePressed() 
+                || controller->CirclePressed() 
+                || controller->XPressed() 
+                || controller->SquarePressed()
+                || controller->L1Pressed()
+                || controller->L2Pressed()
+                || controller->R1Pressed()
+                || controller->R2Pressed()
+                || controller->L3Pressed()
+                || controller->R3Pressed()
+                || controller->StartPressed()
+                || controller->DpadUpPressed()
+                || controller->DpadRightPressed()
+                || controller->DpadDownPressed()
+                || controller->DpadLeftPressed()
+                || controller->TouchpadPressed()
+            )
+            {
+                listen = false;
+                if (show_dialog(MDIALOG_YESNO, "Start merging?"))
+                {
+                    userTextStream << "Starting merging...\n";
+                } else {
+                    listen = true;
+                }
+            }
+        }
     }
 
     return 0;

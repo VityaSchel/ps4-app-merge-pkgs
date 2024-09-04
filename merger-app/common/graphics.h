@@ -6,9 +6,9 @@
 #ifndef GRAPHICS_H
 #define GRAPHICS_H
 
-#ifdef GRAPHICS_USES_FONT
+// #ifdef GRAPHICS_USES_FONT
 #include <proto-include.h>
-#endif
+// #endif
 
 // Color is used to pack together RGB information, and is used for every function that draws colored pixels.
 struct Color
@@ -67,11 +67,11 @@ public:
 	void DrawPixel(int x, int y, Color color);
 	void DrawRectangle(int x, int y, int w, int h, Color color);
 	
-#ifdef GRAPHICS_USES_FONT
+// #ifdef GRAPHICS_USES_FONT
 	bool InitFont(FT_Face *face, const char *fontPath, int fontSize);
 	void DrawText(char *txt, FT_Face face, int startX, int startY, Color bgColor, Color fgColor);
 	void DrawTextContainer(char *txt, FT_Face face, int startX, int startY, int maxW, int maxH, Color bgColor, Color fgColor);
-#endif
+// #endif
 };
 
 #endif

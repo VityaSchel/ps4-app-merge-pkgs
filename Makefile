@@ -5,10 +5,10 @@ TITLE_ID    := PKGM40924
 CONTENT_ID  := IV0000-PKGM40924_00-MERGEFILES000000
 
 # Libraries linked into the ELF.
-LIBS        := -lc -lkernel -lSceMsgDialog -lSceCommonDialog -lSceSysmodule -lc++ -lSceVideoOut -lSceFreeType
+LIBS        := -lc -lkernel -lSceMsgDialog -lSceCommonDialog -lSceSysmodule -lc++ -lSceVideoOut -lSceFreeType -lScePad -lSceUserService
 
 # Additional compile flags.
-#EXTRAFLAGS  := 
+EXTRAFLAGS  := -DGRAPHICS_USES_FONT
 
 # Asset and module directories.
 ASSETS 		:= $(wildcard assets/**/*)

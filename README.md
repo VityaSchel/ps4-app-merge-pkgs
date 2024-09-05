@@ -5,13 +5,17 @@ For those of us who only have 32 gb flash drive and too slow poor router for rem
 ## How to use it
 
 1. Download and install the merger itself on your PS4 (IV0000-PKGM40924_00-MERGEFILES000000.pkg) in [releases](https://github.com/VityaSchel/ps4-app-merge-pkgs/releases)
-2. Download the `splitter` binary for your OS in [releases](https://github.com/VityaSchel/ps4-app-merge-pkgs/releases), drag it to your terminal and as a paramter drag the pkg you want to split. This program will output splitted pkg files in 5 gb chunks in the current terminal directory. You can adjust this size by recompiling splitter source code (see below). For example this is the resulting command to split detroit become human game: `/Users/me/Downloads/splitter /Users/me/Downloads/Detroit.Become.Human.pkg` If it does not respond, wait patiently and look if .pkgpart files started to appear in the directory where you run this command.
+2. Download the `splitter` binary for your OS in [releases](https://github.com/VityaSchel/ps4-app-merge-pkgs/releases), drag it to your terminal and as a paramter drag the pkg you want to split. 
+   - This program will output splitted pkg files in 15 gb chunks in the current terminal directory. 
+   - For example, this is the resulting command to split detroit become human game: `/Users/me/Downloads/splitter /Users/me/Downloads/Detroit.Become.Human.pkg` (assuming you've downloaded splitter to your Downloads directory along with Detroit.Become.Human.pkg)
+   - You can adjust this size by providing `-c` option which is chunk size in bytes. For example, `./splitter -c 30000000000 ./Detroit.Become.Human.pkg` this splits pkg in 30 gb chunks (30 * 1000 * 1000 * 1000)
+   - After starting splitter, wait patiently and look if .pkgpart files started to appear in the directory where you run this command.
 3. Transfer these splitted parts to your flash drive
 4. After you plug-in your flash drive to your ps4, you have to move these splitted parts to very specific directory: /data/pkg_merger. **It won't exist by default, you must create it in /data directory**. MAKE SURE TO WRITE `pkg_merger` CORRECT! Otherwise this app won't be able to see your splitted pkgs. To copy from usb to /pkg/merger, you should use ps4 xplorer 2.0 from homebrew store, nothing else worked for me, for example FTP simply does not allow you to move files from usb to hdd.
    1. Go into /mnt/usb0 (usually usb0 but can also be usb1, usb2 and so on). In ps4 xplorer you can just press "left" on your D-PAD to instantly open mounted usb directory.
    2. Send these splitted files from /mnt/usb0 to /data/pkg_merger. This should take about the same time that took you transferring these files from your pc to flash drive, i.e. 60 mb/s.
 5. Repeat 3 and 4 step for every splitted part of your game. Make sure to not rename files as the app expects them to have _001, _002 and similar suffixes.
-6. Open the app on your ps4 and it should see all files in /data/pkg_merger. Verify that all parts are there on screen in the list, press any button on controller as promted, confirm merging and the app will start to merge them into single one and place it into internal harddrive (/data/pkg). You must have at least double size of your pkg remaining free space on ps4.
+6. Open the app on your ps4 and it should see all files in /data/pkg_merger. Verify that all parts are there on screen in the list, press any button on controller as prompted, confirm merging and the app will start to merge them into single one and place it into internal harddrive (/data/pkg). You must have at least double size of your pkg remaining free space on ps4. The app does not keep parts in RAM, it only has 1 mb buffer to concat parts as stream of bytes.
 7. Finally, the resulted file should appear in goldhen debug installer menu (if you selected Debug Settings -> Package source: all or hdd), install it as usual.
 
 ## Compiling source code
@@ -28,14 +32,6 @@ For those of us who only have 32 gb flash drive and too slow poor router for rem
 2. Go to splitter/build and run `cmake ..`
 3. Run `make` in the same directory
 
-If you want to adjust chunks sizes, go to splitter/main.cpp in source code, find `CHUNK_SIZE` variable and adjust it to your preference, but don't make chunks too big. For example, when I tried with 15 gb the ps4 xplorer simply frozed my ps4 and I had to force shutdown it by holding power button for 30 seconds (in contrast, my app obviously does not keep parts in RAM, it only has 1 mb buffer to concat parts as stream of bytes).
-
-For example, to increase chunk size to 10 gb, change the line to:
-
-```cpp
-constexpr std::uint64_t CHUNK_SIZE = 10ULL * 1000 * 1000 * 1000; // 10 GB
-```
-
 ## Troubleshootig
 
 ### Errors when running splitter such as "illegal instruction"
@@ -48,8 +44,12 @@ That happens sometimes and I have no idea why. The better approach would be to e
 
 What can you do? Try to rebuild splitter/main.cpp and change chunk size. Sometimes it helps, for example decrease from 5 gb to 2 gb and transfer new parts to your ps4.
 
-## My ps4 won't respond to any interactions
+### My ps4 won't respond to any interactions
 
 This just happens.
 
 Now beg for your hdd to not be corrupted and hold power button for 10-30 seconds, until you hear beep. Restart your ps4 shortly after and either get shameful message about how correct ps4 shutdown should be made from its menu or terrifying message that your hdd is corrupted.
+
+## Support me
+
+[hloth.dev/donate](https://hloth.dev/donate)

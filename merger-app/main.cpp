@@ -12,6 +12,7 @@
 #include <fstream>
 #include <thread>
 #include <iomanip>
+#include <mutex>
 
 #include <orbis/libkernel.h>
 #include <orbis/CommonDialog.h>
@@ -42,6 +43,7 @@ int frameID = 0;
 std::stringstream userTextStream;
 
 std::thread mergeThread;
+std::mutex logMutex;
 
 // =================================================================================================
 
@@ -189,6 +191,7 @@ void merge_files(const std::vector<std::string>& files, const std::string& outpu
 
     if (!outputFile.is_open())
     {
+        std::lock_guard<std::mutex> guard(logMutex);
         userTextStream << "Failed to open output file for writing\n";
         return;
     }
@@ -201,10 +204,14 @@ void merge_files(const std::vector<std::string>& files, const std::string& outpu
     }
 
     std::uint64_t processedSize = 0;
-    const std::uint64_t reportInterval = totalSize / 1; // Report every 1%
+    const std::uint64_t reportInterval = totalSize / 10; // Report every 10%
     const std::uint64_t speed = 60 * 1024 * 1024; // 60 mb/s
     std::uint64_t estimatedTimeInSeconds = totalSize / speed;
-    userTextStream << "Estimated time: " << formatTime(estimatedTimeInSeconds) << "\n";
+
+    {
+        std::lock_guard<std::mutex> guard(logMutex);
+        userTextStream << "Estimated time: " << formatTime(estimatedTimeInSeconds) << "\n";
+    }
 
     for (const auto& file : files)
     {
@@ -213,27 +220,33 @@ void merge_files(const std::vector<std::string>& files, const std::string& outpu
         std::ifstream inputFile(fullPath, std::ios::binary);
         if (!inputFile.is_open())
         {
+            std::lock_guard<std::mutex> guard(logMutex);
             userTextStream << "Failed to open input file: " << fullPath << "\n";
             continue;
         }
 
-        userTextStream << "Merging " << file << "\n";
+        {
+            std::lock_guard<std::mutex> guard(logMutex);
+            userTextStream << "Merging " << file << "\n";
+        }
 
         char buffer[1024 * 1024]; // 1 MB
         while (inputFile.read(buffer, sizeof(buffer)))
         {
             outputFile.write(buffer, inputFile.gcount());
             processedSize += inputFile.gcount();
-            if (processedSize >= (reportInterval * (processedSize / reportInterval)))
+            if (processedSize >= reportInterval * (processedSize / reportInterval))
             {
+                std::lock_guard<std::mutex> guard(logMutex);
                 userTextStream << "Progress: " << (processedSize * 100 / totalSize) << "%\n";
             }
         }
         outputFile.write(buffer, inputFile.gcount());
         processedSize += inputFile.gcount();
 
-        if (processedSize >= (reportInterval * (processedSize / reportInterval)))
+        if (processedSize >= reportInterval * (processedSize / reportInterval))
         {
+            std::lock_guard<std::mutex> guard(logMutex);
             userTextStream << "Progress: " << (processedSize * 100 / totalSize) << "%\n";
         }
 
@@ -241,7 +254,10 @@ void merge_files(const std::vector<std::string>& files, const std::string& outpu
     }
 
     outputFile.close();
-    userTextStream << "Files successfully merged into " << output_path << "\n";
+    {
+        std::lock_guard<std::mutex> guard(logMutex);
+        userTextStream << "Files successfully merged into " << output_path << "\n";
+    }
 }
 
 int main(void)
@@ -316,7 +332,14 @@ int main(void)
     
     for (;;)
     {
-        scene->DrawText((char *)userTextStream.str().c_str(), fontTxt, 150, 150, bgColor, fgColor);
+        std::string currentText;
+
+        {
+            std::lock_guard<std::mutex> guard(logMutex);
+            currentText = userTextStream.str();
+        }
+
+        scene->DrawText((char *)currentText.c_str(), fontTxt, 150, 150, bgColor, fgColor);
 
         // Submit the frame buffer
         scene->SubmitFlip(frameID);

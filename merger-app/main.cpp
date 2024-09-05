@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <fstream>
 #include <thread>
+#include <iomanip>
 
 #include <orbis/libkernel.h>
 #include <orbis/CommonDialog.h>
@@ -163,6 +164,25 @@ std::string get_base_filename(const std::string& file_name)
     return file_name;
 }
 
+std::string formatTime(std::uint64_t seconds)
+{
+    std::uint64_t hours = seconds / 3600;
+    std::uint64_t minutes = (seconds % 3600) / 60;
+    std::uint64_t secs = seconds % 60;
+
+    std::ostringstream oss;
+
+    if (hours > 0)
+    {
+        oss << hours << ":";
+    }
+
+    oss << std::setfill('0') << std::setw(2) << minutes << ":"
+        << std::setfill('0') << std::setw(2) << secs;
+
+    return oss.str();
+}
+
 void merge_files(const std::vector<std::string>& files, const std::string& output_path)
 {
     std::ofstream outputFile(output_path, std::ios::binary);
@@ -182,6 +202,9 @@ void merge_files(const std::vector<std::string>& files, const std::string& outpu
 
     std::uint64_t processedSize = 0;
     const std::uint64_t reportInterval = totalSize / 1; // Report every 1%
+    const std::uint64_t speed = 60 * 1024 * 1024; // 60 mb/s
+    std::uint64_t estimatedTimeInSeconds = totalSize / speed;
+    userTextStream << "Estimated time: " << formatTime(estimatedTimeInSeconds) << "\n";
 
     for (const auto& file : files)
     {

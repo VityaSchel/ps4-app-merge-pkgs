@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <fstream>
+#include <thread>
 
 #include <orbis/libkernel.h>
 #include <orbis/CommonDialog.h>
@@ -38,6 +39,8 @@ FT_Face fontTxt;
 int frameID = 0;
 
 std::stringstream userTextStream;
+
+std::thread mergeThread;
 
 // =================================================================================================
 
@@ -325,9 +328,11 @@ int main(void)
                 {
                     userTextStream << "Starting merging...\n";
                     
-                    std::string baseFileName = get_base_filename(files.front());
-                    std::string outputPath = "/data/pkg/" + baseFileName + ".pkg";
-                    merge_files(files, outputPath);
+                    mergeThread = std::thread([&]() {
+                        std::string baseFileName = get_base_filename(files.front());
+                        std::string outputPath = "/data/pkg/" + baseFileName + ".pkg";
+                        merge_files(files, outputPath);
+                    });
                 } else {
                     listen = true;
                 }

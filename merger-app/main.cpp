@@ -7,6 +7,9 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdbool.h>
+#include <algorithm>
+#include <cstdint>
+#include <fstream>
 
 #include <orbis/libkernel.h>
 #include <orbis/CommonDialog.h>
@@ -124,6 +127,94 @@ std::vector<std::string> list_files(const char* usb_path)
     return file_list;
 }
 
+bool compareFilesBySuffix(const std::string& a, const std::string& b)
+{
+    std::string suffixA = a.substr(a.size() - 12);
+    std::string suffixB = b.substr(b.size() - 12);
+
+    if (suffixA.size() != suffixB.size()) return suffixA.size() < suffixB.size();
+    return suffixA < suffixB;
+}
+
+std::uint64_t get_file_size(const std::string& file_path)
+{
+    struct stat file_stat;
+    if (stat(file_path.c_str(), &file_stat) != 0)
+    {
+        return 0;
+    }
+    return static_cast<std::uint64_t>(file_stat.st_size);
+}
+
+std::string get_base_filename(const std::string& file_name)
+{
+    size_t pos = file_name.find_last_of('_');
+    if (pos == std::string::npos)
+    {
+        pos = file_name.find_last_of('.');
+    }
+    if (pos != std::string::npos)
+    {
+        return file_name.substr(0, pos);
+    }
+    return file_name;
+}
+
+void merge_files(const std::vector<std::string>& files, const std::string& output_path)
+{
+    std::ofstream outputFile(output_path, std::ios::binary);
+
+    if (!outputFile.is_open())
+    {
+        userTextStream << "Failed to open output file for writing\n";
+        return;
+    }
+
+    std::uint64_t totalSize = 0;
+    for (const auto& file : files)
+    {
+        totalSize += get_file_size(file);
+    }
+
+    std::uint64_t processedSize = 0;
+    const std::uint64_t reportInterval = totalSize / 1; // Report every 1%
+
+    for (const auto& file : files)
+    {
+        std::ifstream inputFile(file, std::ios::binary);
+        if (!inputFile.is_open())
+        {
+            userTextStream << "Failed to open input file: " << file << "\n";
+            continue;
+        }
+
+        userTextStream << "Merging " << file << "\n";
+
+        char buffer[1024 * 1024]; // 1 MB
+        while (inputFile.read(buffer, sizeof(buffer)))
+        {
+            outputFile.write(buffer, inputFile.gcount());
+            processedSize += inputFile.gcount();
+            if (processedSize >= (reportInterval * (processedSize / reportInterval)))
+            {
+                userTextStream << "Progress: " << (processedSize * 100 / totalSize) << "%\n";
+            }
+        }
+        outputFile.write(buffer, inputFile.gcount());
+        processedSize += inputFile.gcount();
+
+        if (processedSize >= (reportInterval * (processedSize / reportInterval)))
+        {
+            userTextStream << "Progress: " << (processedSize * 100 / totalSize) << "%\n";
+        }
+
+        inputFile.close();
+    }
+
+    outputFile.close();
+    userTextStream << "Files successfully merged into " << output_path << "\n";
+}
+
 int main(void)
 {   
     setvbuf(stdout, NULL, _IONBF, 0);
@@ -165,6 +256,9 @@ int main(void)
     userTextStream << "Welcome! Searching in /data/pkg_merger...\n";
     std::vector<std::string> files = list_files("/data/pkg_merger");
     userTextStream << "Found " << files.size() << " files.\n";
+
+    std::sort(files.begin(), files.end(), compareFilesBySuffix);
+
     for (const auto &file : files)
     {
         if (file.size() > 8 && file.substr(file.size() - 8) == ".pkgpart")
@@ -227,7 +321,10 @@ int main(void)
                 if (show_dialog(MDIALOG_OK, "Press OK to start merging or exit app now"))
                 {
                     userTextStream << "Starting merging...\n";
-                    merge_files(files, "/data/pkg/merged_file.pkg")
+                    
+                    std::string baseFileName = get_base_filename(files.front());
+                    std::string outputPath = "/data/pkg/" + baseFileName + ".pkg";
+                    merge_files(files, outputPath);
                 } else {
                     listen = true;
                 }

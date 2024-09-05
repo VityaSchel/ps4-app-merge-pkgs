@@ -212,7 +212,7 @@ void merge_files(const std::vector<std::string>& files, const std::string& outpu
     }
 
     outputFile.close();
-    userTextStream << "Files successfully merged into " << output_path << "\nNow you can install it via goldhen's installer!\nNow you can also delete .pkgpart files from /data/pkg_merger\n";
+    userTextStream << "Files successfully merged into " << output_path << "\nNow you can install it via goldhen's installer!\nNow you can also delete .pkgpart files from /data/pkg_merger\nClose and reopen this app to start again\n";
 }
 
 
@@ -278,7 +278,7 @@ int main(void)
             std::string fullPath = "/data/pkg_merger/" + file;
             totalSize += get_file_size(fullPath);
         }
-        const std::uint64_t speed = 20 * 1024 * 1024; // 60 MB/s
+        const std::uint64_t speed = 27 * 1024 * 1024; // 27 MB/s on average
         std::uint64_t estimatedTimeInSeconds = totalSize / speed;
 
         userTextStream << "\nEstimated time: " << formatTime(estimatedTimeInSeconds) << "\n";

@@ -2,6 +2,8 @@
 
 For those of us who only have 32 gb flash drive and too slow poor router for remote game transferring...
 
+![Screenshot](https://github.com/user-attachments/assets/b2c619ee-6c5e-4d0e-bd11-3263f3ccb30a)
+
 ## How to use it
 
 1. Download and install the merger itself on your PS4 (IV0000-PKGM40924_00-MERGEFILES000000.pkg) in [releases](https://github.com/VityaSchel/ps4-app-merge-pkgs/releases)

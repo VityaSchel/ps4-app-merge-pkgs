@@ -50,6 +50,12 @@ This just happens.
 
 Now beg for your hdd to not be corrupted and hold power button for 10-30 seconds, until you hear beep. Restart your ps4 shortly after and either get shameful message about how correct ps4 shutdown should be made from its menu or terrifying message that your hdd is corrupted.
 
+### Trying to install resulted pkg errors with CE-38603-0
+
+Go to notifictions -> find the game you're trying to install in list and remove stuck installation in the list.
+
+Source: https://www.reddit.com/r/ps4homebrew/comments/hybr5z/solved_error_ce386030/
+
 ## Support me
 
 [hloth.dev/donate](https://hloth.dev/donate)

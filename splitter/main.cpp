@@ -2,23 +2,41 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <iomanip>
+#include <sstream>
+#include <cstdint>
 
-// const std::size_t CHUNK_SIZE = 15 * 1024 * 1024 * 1024; // 15 GB
-const std::size_t CHUNK_SIZE = 5 * 1024 * 1024;
+std::string getFileNameWithoutExtension(const std::string& filePath) {
+  std::string::size_type lastSlashPos = filePath.find_last_of("/\\");
+  std::string::size_type lastDotPos = filePath.find_last_of('.');
+  
+  std::string baseName = filePath.substr(lastSlashPos + 1, lastDotPos - lastSlashPos - 1);
+  return baseName;
+}
 
-void splitFile(const std::string& filePath, const std::string& outputPrefix) {
+std::string getChunkFileName(const std::string& baseName, std::size_t partNum) {
+  std::ostringstream oss;
+  oss << baseName << "_" << std::setw(3) << std::setfill('0') << partNum << ".pkgpart";
+  return oss.str();
+}
+
+void splitFile(const std::string& filePath) {
   std::ifstream inputFile(filePath, std::ios::binary);
   if (!inputFile) {
     std::cerr << "Error: Could not open input file\n";
     return;
   }
 
-  std::size_t partNum = 0;
-  char buffer[1024 * 1024]; // 1 MB
+  std::string baseName = getFileNameWithoutExtension(filePath);
+  std::size_t partNum = 1;
+  char buffer[1024 * 1024]; // 1 MiB
+
+  constexpr std::uint64_t CHUNK_SIZE = 15ULL * 1000 * 1000 * 1000; // 15 GB
 
   while (!inputFile.eof()) {
-    std::ofstream outputFile(outputPrefix + std::to_string(partNum), std::ios::binary);
-    std::size_t bytesWritten = 0;
+    std::string chunkFileName = getChunkFileName(baseName, partNum);
+    std::ofstream outputFile(chunkFileName, std::ios::binary);
+    std::uint64_t bytesWritten = 0;
 
     while (bytesWritten < CHUNK_SIZE && inputFile) {
       inputFile.read(buffer, sizeof(buffer));
@@ -32,19 +50,17 @@ void splitFile(const std::string& filePath, const std::string& outputPrefix) {
   }
 
   inputFile.close();
-  std::cout << "File split into " << partNum << " parts\n";
+  std::cout << "File split into " << partNum - 1 << " parts\n";
 }
 
 int main(int argc, char* argv[]) {
-  if (argc < 3) {
-    std::cerr << "Usage: " << argv[0] << " <input-file> <output-prefix>\n";
+  if (argc < 2) {
+    std::cerr << "Usage: " << argv[0] << " <input-file>\n";
     return 1;
   }
 
   std::string inputFilePath = argv[1];
-  std::string outputPrefix = argv[2];
-
-  splitFile(inputFilePath, outputPrefix);
+  splitFile(inputFilePath);
 
   return 0;
 }

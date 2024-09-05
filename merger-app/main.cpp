@@ -93,7 +93,7 @@ int show_dialog(int dialog_type, const char * format, ...)
     return (result.buttonId == ORBIS_MSG_DIALOG_BUTTON_ID_YES);
 }
 
-std::vector<std::string> list_files_on_usb(const char* usb_path)
+std::vector<std::string> list_files(const char* usb_path)
 {
     std::vector<std::string> file_list;
     DIR* dir;
@@ -163,7 +163,7 @@ int main(void)
     }
 
     userTextStream << "Welcome! Searching in /data/pkg_merger...\n";
-    std::vector<std::string> files = list_files_on_usb("/data/pkg_merger");
+    std::vector<std::string> files = list_files("/data/pkg_merger");
     userTextStream << "Found " << files.size() << " files.\n";
     for (const auto &file : files)
     {
@@ -224,9 +224,10 @@ int main(void)
             )
             {
                 listen = false;
-                if (show_dialog(MDIALOG_YESNO, "Start merging?"))
+                if (show_dialog(MDIALOG_OK, "Press OK to start merging or exit app now"))
                 {
                     userTextStream << "Starting merging...\n";
+                    merge_files(files, "/data/pkg/merged_file.pkg")
                 } else {
                     listen = true;
                 }

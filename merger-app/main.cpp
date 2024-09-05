@@ -173,7 +173,8 @@ void merge_files(const std::vector<std::string>& files, const std::string& outpu
     std::uint64_t totalSize = 0;
     for (const auto& file : files)
     {
-        totalSize += get_file_size(file);
+        std::string fullPath = "/data/pkg_merger/" + file;
+        totalSize += get_file_size(fullPath);
     }
 
     std::uint64_t processedSize = 0;
@@ -181,10 +182,12 @@ void merge_files(const std::vector<std::string>& files, const std::string& outpu
 
     for (const auto& file : files)
     {
-        std::ifstream inputFile(file, std::ios::binary);
+        std::string fullPath = "/data/pkg_merger/" + file;
+
+        std::ifstream inputFile(fullPath, std::ios::binary);
         if (!inputFile.is_open())
         {
-            userTextStream << "Failed to open input file: " << file << "\n";
+            userTextStream << "Failed to open input file: " << fullPath << "\n";
             continue;
         }
 

@@ -31,7 +31,7 @@ void splitFile(const std::string& filePath) {
   std::size_t partNum = 1;
   char buffer[1024 * 1024]; // 1 MiB
 
-  constexpr std::uint64_t CHUNK_SIZE = 15ULL * 1000 * 1000 * 1000; // 15 GB
+  constexpr std::uint64_t CHUNK_SIZE = 5ULL * 1000 * 1000 * 1000; // 5 GB
 
   while (!inputFile.eof()) {
     std::string chunkFileName = getChunkFileName(baseName, partNum);

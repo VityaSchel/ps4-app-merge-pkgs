@@ -204,14 +204,15 @@ void merge_files(const std::vector<std::string>& files, const std::string& outpu
     }
 
     std::uint64_t processedSize = 0;
-    const std::uint64_t reportInterval = totalSize / 10; // Report every 10%
-    const std::uint64_t speed = 60 * 1024 * 1024; // 60 mb/s
+    const std::uint64_t speed = 60 * 1024 * 1024; // 60 MB/s
     std::uint64_t estimatedTimeInSeconds = totalSize / speed;
 
     {
         std::lock_guard<std::mutex> guard(logMutex);
         userTextStream << "Estimated time: " << formatTime(estimatedTimeInSeconds) << "\n";
     }
+
+    std::uint64_t lastReportedProgress = 0; // Track the last progress reported
 
     for (const auto& file : files)
     {
@@ -235,19 +236,23 @@ void merge_files(const std::vector<std::string>& files, const std::string& outpu
         {
             outputFile.write(buffer, inputFile.gcount());
             processedSize += inputFile.gcount();
-            if (processedSize >= reportInterval * (processedSize / reportInterval))
+            std::uint64_t currentProgress = processedSize * 100 / totalSize;
+            if (currentProgress >= (lastReportedProgress + 10)) // Report every 10%
             {
                 std::lock_guard<std::mutex> guard(logMutex);
-                userTextStream << "Progress: " << (processedSize * 100 / totalSize) << "%\n";
+                userTextStream << "Progress: " << currentProgress << "%\n";
+                lastReportedProgress = currentProgress;
             }
         }
         outputFile.write(buffer, inputFile.gcount());
         processedSize += inputFile.gcount();
 
-        if (processedSize >= reportInterval * (processedSize / reportInterval))
+        std::uint64_t finalProgress = processedSize * 100 / totalSize;
+        if (finalProgress >= (lastReportedProgress + 10)) // Report 100%
         {
             std::lock_guard<std::mutex> guard(logMutex);
-            userTextStream << "Progress: " << (processedSize * 100 / totalSize) << "%\n";
+            userTextStream << "Progress: " << finalProgress << "%\n";
+            lastReportedProgress = finalProgress;
         }
 
         inputFile.close();
@@ -259,6 +264,7 @@ void merge_files(const std::vector<std::string>& files, const std::string& outpu
         userTextStream << "Files successfully merged into " << output_path << "\n";
     }
 }
+
 
 int main(void)
 {   

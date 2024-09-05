@@ -112,8 +112,6 @@ std::vector<std::string> list_files(const char* usb_path)
         return file_list;
     }
 
-    userTextStream << "Opened " << usb_path << " directory\n";
-
     while ((entry = readdir(dir)) != NULL)
     {
         char full_path[1024];
@@ -214,7 +212,7 @@ void merge_files(const std::vector<std::string>& files, const std::string& outpu
     }
 
     outputFile.close();
-    userTextStream << "Files successfully merged into " << output_path << "\n";
+    userTextStream << "Files successfully merged into " << output_path << "\nNow you can install it via goldhen's installer!\nNow you can also delete .pkgpart files from /data/pkg_merger\n";
 }
 
 
@@ -256,9 +254,9 @@ int main(void)
         for(;;);
     }
 
-    userTextStream << "Welcome! Searching in /data/pkg_merger...\n";
+    userTextStream << "Welcome! PKG merger by hloth.dev\nSearching in /data/pkg_merger...\n";
     std::vector<std::string> files = list_files("/data/pkg_merger");
-    userTextStream << "Found " << files.size() << " files.\n";
+    userTextStream << "Found " << files.size() << " files:\n";
 
     std::sort(files.begin(), files.end(), compareFilesBySuffix);
 
@@ -280,13 +278,13 @@ int main(void)
             std::string fullPath = "/data/pkg_merger/" + file;
             totalSize += get_file_size(fullPath);
         }
-        const std::uint64_t speed = 60 * 1024 * 1024; // 60 MB/s
+        const std::uint64_t speed = 20 * 1024 * 1024; // 60 MB/s
         std::uint64_t estimatedTimeInSeconds = totalSize / speed;
 
-        userTextStream << "Estimated time: " << formatTime(estimatedTimeInSeconds) << "\n";
+        userTextStream << "\nEstimated time: " << formatTime(estimatedTimeInSeconds) << "\n";
         userTextStream << "App will be frozen entire time, do not worry and look\nif .pkg file started appearing in /data/pkg directory via FTP\nAllow up to 3x of that estimated time\n";
 
-        userTextStream << "\nPress any button on controller to START merging parts\n";
+        userTextStream << "\nPress any button on controller to START merging parts\n\n";
         if (!controller->Init(-1))
         {
             userTextStream << "Couldn't initialize controller\n";
@@ -335,8 +333,6 @@ int main(void)
                 listen = false;
                 if (show_dialog(MDIALOG_OK, "App will not report any progress and will be frozen until merging is done, do not worry about it. Press OK to start merging or exit app now"))
                 {
-                    userTextStream << "Starting merging...\n";
-
                     std::string baseFileName = get_base_filename(files.front());
                     std::string outputPath = "/data/pkg/" + baseFileName + ".pkg";
                     merge_files(files, outputPath);

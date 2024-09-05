@@ -12,7 +12,6 @@
 #include <fstream>
 #include <thread>
 #include <iomanip>
-#include <mutex>
 
 #include <orbis/libkernel.h>
 #include <orbis/CommonDialog.h>
@@ -41,9 +40,6 @@ FT_Face fontTxt;
 int frameID = 0;
 
 std::stringstream userTextStream;
-
-std::thread mergeThread;
-std::mutex logMutex;
 
 // =================================================================================================
 
@@ -191,28 +187,11 @@ void merge_files(const std::vector<std::string>& files, const std::string& outpu
 
     if (!outputFile.is_open())
     {
-        std::lock_guard<std::mutex> guard(logMutex);
         userTextStream << "Failed to open output file for writing\n";
         return;
     }
 
-    std::uint64_t totalSize = 0;
-    for (const auto& file : files)
-    {
-        std::string fullPath = "/data/pkg_merger/" + file;
-        totalSize += get_file_size(fullPath);
-    }
-
     std::uint64_t processedSize = 0;
-    const std::uint64_t speed = 60 * 1024 * 1024; // 60 MB/s
-    std::uint64_t estimatedTimeInSeconds = totalSize / speed;
-
-    {
-        std::lock_guard<std::mutex> guard(logMutex);
-        userTextStream << "Estimated time: " << formatTime(estimatedTimeInSeconds) << "\n";
-    }
-
-    std::uint64_t lastReportedProgress = 0; // Track the last progress reported
 
     for (const auto& file : files)
     {
@@ -221,48 +200,21 @@ void merge_files(const std::vector<std::string>& files, const std::string& outpu
         std::ifstream inputFile(fullPath, std::ios::binary);
         if (!inputFile.is_open())
         {
-            std::lock_guard<std::mutex> guard(logMutex);
             userTextStream << "Failed to open input file: " << fullPath << "\n";
             continue;
-        }
-
-        {
-            std::lock_guard<std::mutex> guard(logMutex);
-            userTextStream << "Merging " << file << "\n";
         }
 
         char buffer[1024 * 1024]; // 1 MB
         while (inputFile.read(buffer, sizeof(buffer)))
         {
             outputFile.write(buffer, inputFile.gcount());
-            processedSize += inputFile.gcount();
-            std::uint64_t currentProgress = processedSize * 100 / totalSize;
-            if (currentProgress >= (lastReportedProgress + 10)) // Report every 10%
-            {
-                std::lock_guard<std::mutex> guard(logMutex);
-                userTextStream << "Progress: " << currentProgress << "%\n";
-                lastReportedProgress = currentProgress;
-            }
         }
         outputFile.write(buffer, inputFile.gcount());
-        processedSize += inputFile.gcount();
-
-        std::uint64_t finalProgress = processedSize * 100 / totalSize;
-        if (finalProgress >= (lastReportedProgress + 10)) // Report 100%
-        {
-            std::lock_guard<std::mutex> guard(logMutex);
-            userTextStream << "Progress: " << finalProgress << "%\n";
-            lastReportedProgress = finalProgress;
-        }
-
         inputFile.close();
     }
 
     outputFile.close();
-    {
-        std::lock_guard<std::mutex> guard(logMutex);
-        userTextStream << "Files successfully merged into " << output_path << "\n";
-    }
+    userTextStream << "Files successfully merged into " << output_path << "\n";
 }
 
 
@@ -322,7 +274,19 @@ int main(void)
     bool listen = false;
     if (files.size() > 1)
     {
-        userTextStream << "Press any button on controller to merge parts\n";
+        std::uint64_t totalSize = 0;
+        for (const auto &file : files)
+        {
+            std::string fullPath = "/data/pkg_merger/" + file;
+            totalSize += get_file_size(fullPath);
+        }
+        const std::uint64_t speed = 60 * 1024 * 1024; // 60 MB/s
+        std::uint64_t estimatedTimeInSeconds = totalSize / speed;
+
+        userTextStream << "Estimated time: " << formatTime(estimatedTimeInSeconds) << "\n";
+        userTextStream << "App will be frozen entire time, do not worry and look\nif .pkg file started appearing in /data/pkg directory via FTP\nAllow up to 3x of that estimated time\n";
+
+        userTextStream << "\nPress any button on controller to START merging parts\n";
         if (!controller->Init(-1))
         {
             userTextStream << "Couldn't initialize controller\n";
@@ -338,14 +302,7 @@ int main(void)
     
     for (;;)
     {
-        std::string currentText;
-
-        {
-            std::lock_guard<std::mutex> guard(logMutex);
-            currentText = userTextStream.str();
-        }
-
-        scene->DrawText((char *)currentText.c_str(), fontTxt, 150, 150, bgColor, fgColor);
+        scene->DrawText((char *)userTextStream.str().c_str(), fontTxt, 150, 150, bgColor, fgColor);
 
         // Submit the frame buffer
         scene->SubmitFlip(frameID);
@@ -376,15 +333,13 @@ int main(void)
             )
             {
                 listen = false;
-                if (show_dialog(MDIALOG_OK, "Press OK to start merging or exit app now"))
+                if (show_dialog(MDIALOG_OK, "App will not report any progress and will be frozen until merging is done, do not worry about it. Press OK to start merging or exit app now"))
                 {
                     userTextStream << "Starting merging...\n";
-                    
-                    mergeThread = std::thread([&]() {
-                        std::string baseFileName = get_base_filename(files.front());
-                        std::string outputPath = "/data/pkg/" + baseFileName + ".pkg";
-                        merge_files(files, outputPath);
-                    });
+
+                    std::string baseFileName = get_base_filename(files.front());
+                    std::string outputPath = "/data/pkg/" + baseFileName + ".pkg";
+                    merge_files(files, outputPath);
                 } else {
                     listen = true;
                 }

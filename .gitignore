@@ -8,3 +8,7 @@ merger-app/x64/Debug/*
 
 splitter/build/*
 !splitter/build/.gitkeep
+splitter/build-windows/*
+!splitter/build-windows/.gitkeep
+splitter/build-linux/*
+!splitter/build-linux/.gitkeep

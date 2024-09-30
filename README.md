@@ -10,7 +10,7 @@ For those of us who only have 32 gb flash drive and too slow poor router for rem
 2. Download the `splitter` binary for your OS in [releases](https://github.com/VityaSchel/ps4-app-merge-pkgs/releases), drag it to your terminal and as a paramter drag the pkg you want to split. 
    - This program will output splitted pkg files in 15 gb chunks in the current terminal directory. 
    - For example, this is the resulting command to split detroit become human game: `/Users/me/Downloads/splitter /Users/me/Downloads/Detroit.Become.Human.pkg` (assuming you've downloaded splitter to your Downloads directory along with Detroit.Become.Human.pkg)
-   - You can adjust this size by providing `-c` option which is chunk size in bytes. For example, `./splitter -c 30000000000 ./Detroit.Become.Human.pkg` this splits pkg in 30 gb chunks (30 * 1000 * 1000 * 1000)
+   - You can adjust this size by providing `-c` option which is chunk size in MEGAbytes. For example, `./splitter -c 30000 ./Detroit.Become.Human.pkg` splits pkg in 30 gb chunks (30 * 1000)
    - After starting splitter, wait patiently and look if .pkgpart files started to appear in the directory where you run this command.
 3. Transfer these splitted parts to your flash drive
 4. After you plug-in your flash drive to your ps4, you have to move these splitted parts to very specific directory: /data/pkg_merger. **It won't exist by default, you must create it in /data directory**. MAKE SURE TO WRITE `pkg_merger` CORRECT! Otherwise this app won't be able to see your splitted pkgs. To copy from usb to /pkg/merger, you should use ps4 xplorer 2.0 from homebrew store, nothing else worked for me, for example FTP simply does not allow you to move files from usb to hdd.
